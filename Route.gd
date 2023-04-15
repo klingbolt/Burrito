@@ -1,15 +1,30 @@
 extends Spatial
 
+var Waypoint = preload("res://waypoint.gd")
+
 var texture_path
 var category_name = ""
+var marker_pack = ""
 var color = Color(0.9, 0.1, 0.1)
 var is_editable = false
+var is_edited = false
+var waypoint_trail = Waypoint.Trail.new()
 
 var point_list := PoolVector3Array()
 
 func create_mesh(point_list: PoolVector3Array):
 	self.point_list = point_list
 	refresh_mesh()
+
+
+func update_waypoint_trail():
+	self.waypoint_trail.clear_trail_data()
+	var trail_data = self.waypoint_trail.new_trail_data()
+	for point in self.point_list:
+		trail_data.add_points_x(point[0])
+		trail_data.add_points_y(point[1])
+		trail_data.add_points_z(point[2])
+
 
 func refresh_mesh():
 	var tmpMesh = Mesh.new()

@@ -62,6 +62,7 @@ func _ready():
 	OS.set_window_position(Vector2(0,0))
 	set_minimal_mouse_block()
 	server.listen(4242)
+	init_category_tree()
 
 func set_minimal_mouse_block():
 	var top_corner := Vector2(287, 0)
@@ -258,7 +259,9 @@ func decode_context_packet(spb: StreamPeerBuffer):
 	if self.map_id != old_map_id:
 		print("Loading New Map")
 		load_waypoint_markers(self.map_id)
-		gen_map_markers()
+		self.markerdata.clear_category()
+		self.markerdata.clear_icon()
+		self.markerdata.clear_trail()
 
 	# TODO move this to reset_minimap_masks
 	for child in $Paths.get_children():
@@ -285,19 +288,52 @@ func reset_minimap_masks():
 		minimap_path.material.set_shader_param("minimap_corner", compass_corner1)
 		minimap_path.material.set_shader_param("minimap_corner2", compass_corner2)
 
+
 var markerdata = Waypoint.Waypoint.new()
 var marker_file_dir = "user://protobins/"
+var auto_save_dir = "user://auto_save_data/"
 var marker_file_path = ""
-var marker_packs_array = Array()
+var auto_save_file_path = ""
+var marker_packs_loaded = Array()
+var marker_packs_edited = Array()
+var root 
 onready var marker_packs = get_node("Control/Dialogs/MarkerPacks/MarkerPacks")
+onready var unsaved_data_icon = get_node("Control/GlobalMenuButton/TextureRect/UnsavedData")
+onready var icons = $Icons
+onready var paths = $Paths
+onready var minimap = $Control/MiniMap
+onready var local_data = get_node("Control/LocalData") 
 
 func load_waypoint_markers(map_id):
-	self.marker_file_path = self.marker_file_dir + String(map_id) + ".data"
-	print("Loading protobuf file from path ", self.marker_file_path)
 	self.markerdata.clear_category()
 	self.markerdata.clear_icon()
 	self.markerdata.clear_trail()
+	self.marker_packs_loaded.clear()
+	self.marker_packs_edited.clear()
+	self.unsaved_data_icon.visible = false
+	root.free()
+	clear_map_markers()
+	
+	init_category_tree()
+	self.auto_save_file_path = self.auto_save_dir + String(map_id) + ".data"
 	var file = File.new()
+	if file.file_exists(auto_save_file_path):
+		print("Loading autosave file from path ", self.auto_save_file_path)
+		file.open(self.auto_save_file_path, file.READ)
+		var data = file.get_buffer(file.get_len())
+		self.markerdata.from_bytes(data)
+		if !Waypoint.PB_ERR.NO_ERRORS:
+			print("OK")
+		else:
+			print(Waypoint.PB_ERR)
+		#gen_map_markers()
+		self.marker_packs_edited = self.marker_packs_loaded
+		self.unsaved_data_icon.visible = true
+		print(marker_packs_edited)
+		
+			
+	self.marker_file_path = self.marker_file_dir + String(map_id) + ".data"
+	print("Loading protobuf file from path ", self.marker_file_path)
 	file.open(self.marker_file_path, file.READ)
 	var data = file.get_buffer(file.get_len())
 	self.markerdata.from_bytes(data)
@@ -305,6 +341,7 @@ func load_waypoint_markers(map_id):
 		print("OK")
 	else:
 		print(Waypoint.PB_ERR)
+	gen_map_markers()
 
 
 var route_scene = load("res://Route.tscn")
@@ -383,11 +420,7 @@ func _unhandled_input(event):
 ################################################################################
 #
 ################################################################################
-onready var icons = $Icons
-onready var paths = $Paths
-onready var minimap = $Control/MiniMap
-
-func gen_map_markers():
+func clear_map_markers():
 	# Clear all the rendered assets to make way for the new ones
 	for path in paths.get_children():
 		path.queue_free()
@@ -398,51 +431,36 @@ func gen_map_markers():
 	for icon in icons.get_children():
 		icon.queue_free()
 
-	marker_packs.clear()
-	build_category_tree()
-
+func gen_map_markers():
 	# Load the data from the markers
-	for path in self.markerdata.get_trail():
-		var path_points := PoolVector3Array()
-		var trail_data = path.get_trail_data()
-		if trail_data.get_points_x().size() != trail_data.get_points_y().size() or trail_data.get_points_x().size() != trail_data.get_points_z().size()
-			print("Warning: Trail ", trail.get_category.get_name(), " does not have equal number of X, Y, and Z coordinates.")
-		for index in range(0, trail_data.get_points_z().size()):
-			path_points.append(Vector3(trail_data.get_points_x()[index], trail_data.get_points_y()[index], trail_data.get_points_z()[index]))
-		var texture_path = path.get_texture_path()
-		var full_texture_path = self.marker_file_dir + texture_path.get_path()
-		gen_new_path(path_points, full_texture_path, path.get_category().get_name())
-	for icon in self.markerdata.get_icon():
-		var position = icon.get_position()
-		if position == null:
-			print("Warning: No position found for icon ", icon.get_category().name())
-			continue
-		var position_vector = Vector3(position.get_x(), position.get_y(), position.get_z())
-		var texture_path = icon.get_texture_path()
-		if texture_path == null:
-			#Some icons have their texture in a parent of the category.
-			continue
-		var full_texture_path = self.marker_file_dir + texture_path.get_path()
-		gen_new_icon(position_vector, full_texture_path, icon.get_category().get_name())
-	
-		
-onready var local_data = get_node("Control/LocalData") 
+	for waypoint_trail in self.markerdata.get_trail():
+		var category_name = waypoint_trail.get_category().get_name()
+		var split_category_name = category_name.split(".")
+		if !self.marker_packs_loaded.has(split_category_name[0]):
+			gen_new_path(waypoint_trail)
+	for waypoint_icon in self.markerdata.get_icon():
+		var category_name = waypoint_icon.get_category().get_name()
+		var split_category_name = category_name.split(".")
+		if !self.marker_packs_loaded.has(split_category_name[0]):
+			gen_new_icon(waypoint_icon)
+	for category in self.markerdata.get_category():
+		if category.get_name() != "":
+			self.marker_packs_loaded.append(category.get_name())
+			add_category(self.root, category, category.get_name(), false)
 
-func build_category_tree():
-	var root = marker_packs.create_item()
+
+func init_category_tree():
+	self.root = marker_packs.create_item()
 	root.set_text(0, "Markers available on current map")
 	root.set_selectable(0, false)
 	root.set_text(1, "Visible")
-	
-	for category in self.markerdata.get_category():
-		add_category(root, category, category.get_name(), false)
 
 
 func add_category(item: TreeItem, category, tree_path: String, collapsed: bool):
 	if category.get_name() != "":
 		var category_item = marker_packs.create_item(item)
-		category_item.set_text(0,category.get_display_name())
-		category_item.set_metadata(0,category)
+		category_item.set_text(0, category.get_display_name())
+		category_item.set_metadata(0, category)
 		category_item.set_cell_mode(1, TreeItem.CELL_MODE_CHECK)
 		category_item.set_checked(1, self.local_data.visible_dict.get(tree_path, false))
 		category_item.set_tooltip(1, "Show/Hide")
@@ -493,7 +511,13 @@ func switch_checkboxes(item: TreeItem, checked: bool):
 		child_item = child_item.get_next()
 
 
-func gen_new_path(points: Array, texture_path: String, category_name: String):
+func gen_new_path(waypoint_trail):
+	var path_points := PoolVector3Array()
+	var trail_data = waypoint_trail.get_trail_data()
+	for index in range(0, trail_data.get_points_x().size()):
+		path_points.append(Vector3(trail_data.get_points_x()[index], trail_data.get_points_y()[index], trail_data.get_points_z()[index]))
+	var texture_path = waypoint_trail.get_texture_path()
+	var full_texture_path = self.marker_file_dir + texture_path.get_path()
 
 	# Create the texture to use from an image file
 	# TODO: We want to be able to cache this data so that if a texture is used
@@ -503,9 +527,9 @@ func gen_new_path(points: Array, texture_path: String, category_name: String):
 	# srgb to render properly. Issue #23.
 	var texture_file = File.new()
 	var image = Image.new()
-	if !texture_file.file_exists(texture_path):
-		print("Warning: File does not exist: ", texture_path)
-	texture_file.open(texture_path, File.READ)
+	if !texture_file.file_exists(full_texture_path):
+		print("Warning: File does not exist: ", full_texture_path)
+	texture_file.open(full_texture_path, File.READ)
 	image.load_png_from_buffer(texture_file.get_buffer(texture_file.get_len()))
 	texture_file.close()
 	image.lock()
@@ -527,16 +551,20 @@ func gen_new_path(points: Array, texture_path: String, category_name: String):
 	#path_3d_markers.append(new_path)
 	
 	var points_3d := PoolVector3Array()
-	for point in points:
+	for point in path_points:
 		points_3d.append(Vector3(point[0], point[1], -point[2]))
-	
+		
+	var category_name = waypoint_trail.get_category().get_name()
 	new_route.create_mesh(points_3d)
 	new_route.set_texture(texture)
 	new_route.visible = self.local_data.visible_dict.get(category_name, false)
+	var split_category_name = category_name.split(".")
 	new_route.category_name = category_name
+	new_route.marker_pack = split_category_name[0]
+	new_route.waypoint_trail = waypoint_trail
 	
 	paths.add_child(new_route)
-	var points_2d_array = segment_2D_paths(points)
+	var points_2d_array = segment_2D_paths(path_points)
 	
 	# Create a new 2D Path
 	for segment in points_2d_array:
@@ -545,6 +573,8 @@ func gen_new_path(points: Array, texture_path: String, category_name: String):
 		new_2d_path.texture = texture
 		new_2d_path.visible = self.local_data.visible_dict.get(category_name, false)
 		new_2d_path.category_name = category_name
+		new_2d_path.marker_pack = split_category_name[0]
+		
 		minimap.add_child(new_2d_path)
 
 
@@ -563,41 +593,79 @@ func segment_2D_paths (points: Array):
 ################################################################################
 #
 ################################################################################
-func gen_new_icon(position: Vector3, texture_path: String, category_name: String): 
-	position.z = -position.z
+func gen_new_icon(waypoint_icon): 
+	var position = waypoint_icon.get_position()
+	if position == null:
+		print("Warning: No position found for icon ", waypoint_icon.get_category().name())
+	var position_vector = Vector3(position.get_x(), position.get_y(), position.get_z())
+	var texture_path = waypoint_icon.get_texture_path()
+	var full_texture_path
+	if texture_path == null:
+		return
+		#Some icons have their texture in a parent of the category.
+	full_texture_path = self.marker_file_dir + texture_path.get_path()
+	
+	position_vector[2]= -position_vector[2]
+	var category_name = waypoint_icon.get_category().get_name()
 	var new_icon = icon_scene.instance()
-	new_icon.translation = position
-	new_icon.set_icon_image(texture_path)
+	new_icon.translation = position_vector
+	new_icon.set_icon_image(full_texture_path)
 	new_icon.visible = self.local_data.visible_dict.get(category_name, false)
+	var split_category_name = category_name.split(".")
 	new_icon.category_name = category_name
+	new_icon.marker_pack = split_category_name[0]
+	new_icon.waypoint_icon = waypoint_icon
 	#icon_markers.append(new_icon)
 	icons.add_child(new_icon)
 
-# This function take all of the currently rendered objects and converts it into
-# the data format that is saved/loaded from.
-func data_from_renderview():
-	var icons_data = []
-	var paths_data = []
+func auto_saving():
+	self.markerdata.clear_category()
+	self.markerdata.clear_icon()
+	self.markerdata.clear_trail()
 	
-	for icon in $Icons.get_children():
-		icons_data.append({
-			"position": [icon.translation.x, icon.translation.y, -icon.translation.z],
-			"texture": icon.texture_path
-		})
-	
-	for path in $Paths.get_children():
-		#print(path)
-		var points = []
-		for point in range(path.get_point_count()):
-			var point_position:Vector3 = path.get_point_position(point)
-			points.append([point_position.x, point_position.y, -point_position.z])
-		paths_data.append({
-			"points": points,
-			"texture": path.texture_path
-		})
+	for icon in icons.get_children():
+		if self.marker_packs_edited.has(icon.marker_pack):
+			icon.update_waypoint_icon()
+			self.markerdata._icon.value.append(icon.waypoint_icon)
+	for path in paths.get_children():
+		if self.marker_packs_edited.has(path.marker_pack):
+			path.update_waypoint_trail()
+			self.markerdata._trail.value.append(path.waypoint_trail)
+	var child_item = self.root.get_children()
+	while child_item != null:
+		if self.marker_packs_edited.has(child_item.get_metadata(0).get_name()):
+			self.markerdata._category.value.append(child_item.get_metadata(0))
+		child_item = child_item.get_next()
+		
+	var packed_bytes = self.markerdata.to_bytes()
+	if packed_bytes.size() > 0:
+		var file = File.new()
+		file.open(self.auto_save_file_path, file.WRITE)
+		file.store_buffer(packed_bytes)
+		unsaved_data_icon.visible = true
 
-	var data_out = {"icons": icons_data, "paths": paths_data}
-	return data_out
+func manual_save():
+	self.markerdata.clear_category()
+	self.markerdata.clear_icon()
+	self.markerdata.clear_trail()
+	
+	for icon in icons.get_children():
+		self.markerdata._icon.value.append(icon.waypoint_icon)
+	for path in paths.get_children():
+		self.markerdata._trail.value.append(path.waypoint_trail)
+	var child_item = self.root.get_children()
+	while child_item != null:
+		self.markerdata._category.value.append(child_item.get_metadata(0))
+		child_item = child_item.get_next()
+	
+	var packed_bytes = self.markerdata.to_bytes()
+	if packed_bytes.size() > 0:
+		var file = File.new()
+		file.open(self.marker_file_path, file.WRITE)
+		file.store_buffer(packed_bytes)
+		if file.file_exists(self.auto_save_file_path):
+			file.remove(self.auto_save_file_path)
+		unsaved_data_icon.visible = false
 
 func _on_main_menu_toggle_pressed():
 	$Control/Dialogs/MainMenu.show()
@@ -641,12 +709,13 @@ func gen_adjustment_nodes():
 
 	for index in range(self.icons.get_child_count()):
 		var icon = self.icons.get_child(index)
-		var new_gizmo = gizmo_scene.instance()
-		new_gizmo.translation = icon.translation
-		new_gizmo.link_point("icon", icon)
-		new_gizmo.connect("selected", self, "on_gizmo_selected")
-		new_gizmo.connect("deselected", self, "on_gizmo_deselected")
-		$Gizmos.add_child(new_gizmo)
+		if icon.is_editable:
+			var new_gizmo = gizmo_scene.instance()
+			new_gizmo.translation = icon.translation
+			new_gizmo.link_point("icon", icon)
+			new_gizmo.connect("selected", self, "on_gizmo_selected")
+			new_gizmo.connect("deselected", self, "on_gizmo_deselected")
+			$Gizmos.add_child(new_gizmo)
 
 
 var currently_selected_node = null
@@ -740,12 +809,34 @@ func _on_NewPath_pressed():
 # Create a new icon and give it the texture
 ################################################################################
 func _on_NewIcon_pressed():
-	gen_new_icon(self.player_position, self.next_texture_path, "")
+	if !self.marker_packs_edited.has(self.currently_selected_node.object_link.marker_pack):
+		self.marker_packs_edited.append(self.currently_selected_node.object_link.marker_pack)
+	var waypoint_icon = Waypoint.Icon.new()
+	var position = waypoint_icon.new_position()
+	position.set_x(self.player_position[0])
+	position.set_y(self.player_position[1])
+	position.set_z(self.player_position[2])
+	var texture_path = waypoint_icon.new_texture_path()
+	texture_path.set_path(self.next_texture_path)
+	var category = waypoint_icon.new_category()
+	category.set_name(self.currently_active_category.get_name())	
+	gen_new_icon(waypoint_icon)
 
 # A new path point is created
 func _on_NewPathPoint_pressed():
+	if !self.marker_packs_edited.has(self.currently_selected_node.object_link.marker_pack):
+		self.marker_packs_edited.append(self.currently_selected_node.object_link.marker_pack)
 	if self.currently_active_path == null:
-		gen_new_path([self.player_position], self.next_texture_path, self.currently_active_category.get_name())
+		var waypoint_trail = Waypoint.Trail.new()
+		var trail_data = waypoint_trail.new_trail_data()
+		trail_data.add_points_x(self.player_position[0])
+		trail_data.add_points_y(self.player_position[1])
+		trail_data.add_points_z(self.player_position[2])
+		var texture_path = waypoint_trail.new_texture_path()
+		texture_path.set_path(self.next_texture_path)
+		var category = waypoint_trail.new_category()
+		category.set_name(self.currently_active_category.get_name())
+		gen_new_path(waypoint_trail)
 	else:
 		var z_accurate_player_position = player_position
 		z_accurate_player_position.z = -z_accurate_player_position.z
@@ -768,17 +859,14 @@ func _on_NewPathPoint_pressed():
 # _on_SaveDialog_file_selected() will be called with the user specified path.
 ################################################################################
 func _on_SavePath_pressed():
-	$Control/Dialogs/SaveDialog.show()
+	manual_save()
 
 ################################################################################
 # Save the current markers to a file, this includes all markers in memory not
 # just the markers on the current map.
 ################################################################################
 func _on_SaveDialog_file_selected(path):
-	self.markerdata[str(self.map_id)] = data_from_renderview()
-	var save_game = File.new()
-	save_game.open(path, File.WRITE)
-	save_game.store_string(JSON.print(self.markerdata))
+	pass
 
 
 func _on_NodeEditorDialog_hide():
@@ -788,6 +876,8 @@ func _on_NodeEditorDialog_hide():
 
 
 func _on_DeleteNode_pressed():
+	if !self.marker_packs_edited.has(self.currently_selected_node.object_link.marker_pack):
+		self.marker_packs_edited.append(self.currently_selected_node.object_link.marker_pack)
 	if self.currently_selected_node.point_type == "icon":
 		self.currently_selected_node.object_link.get_parent().remove_child(self.currently_selected_node.object_link)
 		self.currently_selected_node.object_link.queue_free()
@@ -804,6 +894,8 @@ func _on_DeleteNode_pressed():
 
 
 func _on_NewNodeAfter_pressed():
+	if !self.marker_packs_edited.has(self.currently_selected_node.object_link.marker_pack):
+		self.marker_packs_edited.append(self.currently_selected_node.object_link.marker_pack)
 	if self.currently_selected_node.point_type == "icon":
 		print("Warning: Cannot add node to icon")
 	elif self.currently_selected_node.point_type == "path":
@@ -827,15 +919,21 @@ func _on_NewNodeAfter_pressed():
 		on_gizmo_deselected(self.currently_selected_node)
 		
 func _on_XZSnapToPlayer_pressed():
+	if !self.marker_packs_edited.has(self.currently_selected_node.object_link.marker_pack):
+		self.marker_packs_edited.append(self.currently_selected_node.object_link.marker_pack)
 	self.currently_selected_node.translation.x = self.player_position.x
 	self.currently_selected_node.translation.z = -self.player_position.z
 
 
 func _on_YSnapToPlayer_pressed():
+	if !self.marker_packs_edited.has(self.currently_selected_node.object_link.marker_pack):
+		self.marker_packs_edited.append(self.currently_selected_node.object_link.marker_pack)
 	self.currently_selected_node.translation.y = self.player_position.y
 
 
 func _on_SnapSelectedToPlayer_pressed():
+	if !self.marker_packs_edited.has(self.currently_selected_node.object_link.marker_pack):
+		self.marker_packs_edited.append(self.currently_selected_node.object_link.marker_pack)
 	self.currently_selected_node.translation.x = self.player_position.x
 	self.currently_selected_node.translation.z = -self.player_position.z
 	self.currently_selected_node.translation.y = self.player_position.y
@@ -849,6 +947,8 @@ func _on_SetActivePath_pressed():
 
 
 func _on_ReversePathDirection_pressed():
+	if !self.marker_packs_edited.has(self.currently_selected_node.object_link.marker_pack):
+		self.marker_packs_edited.append(self.currently_selected_node.object_link.marker_pack)
 	self.currently_selected_node.object_link.reverse()
 
 
@@ -897,3 +997,7 @@ func _on_HideAll_pressed():
 		category_item.set_checked(1, false)
 		switch_selected_category(category_item)
 		category_item = category_item.get_next()
+
+
+func _on_SavePath2_pressed():
+	auto_saving()

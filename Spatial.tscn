@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=2]
+[gd_scene load_steps=19 format=2]
 
 [ext_resource path="res://Spatial.gd" type="Script" id=1]
 [ext_resource path="res://shaders/range_indicators.shader" type="Shader" id=2]
@@ -13,6 +13,7 @@
 [ext_resource path="res://icon_new_point.png" type="Texture" id=11]
 [ext_resource path="res://SettingsDialog.gd" type="Script" id=12]
 [ext_resource path="res://LocalData.gd" type="Script" id=13]
+[ext_resource path="res://UnsavedData.gd" type="Script" id=15]
 
 [sub_resource type="Shader" id=1]
 code = "shader_type canvas_item;
@@ -90,10 +91,26 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
+[node name="UnsavedData" type="TextureRect" parent="Control/GlobalMenuButton/TextureRect"]
+visible = false
+modulate = Color( 1, 0, 0, 0.94902 )
+margin_top = -4.76837e-07
+margin_right = 25.0
+margin_bottom = 25.0
+rect_scale = Vector2( 1.02718, 1.02117 )
+hint_tooltip = "Unsaved Data"
+texture = ExtResource( 3 )
+script = ExtResource( 15 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
 [node name="main_menu_toggle" type="Button" parent="Control/GlobalMenuButton"]
 modulate = Color( 1, 1, 1, 0 )
-margin_right = 27.0
-margin_bottom = 32.0
+margin_left = -0.347992
+margin_top = 2.0
+margin_right = 26.652
+margin_bottom = 34.0
 __meta__ = {
 "_edit_use_anchors_": false
 }
@@ -194,6 +211,7 @@ __meta__ = {
 }
 
 [node name="MainMenu" type="WindowDialog" parent="Control/Dialogs"]
+visible = true
 margin_left = 48.0
 margin_top = 82.0
 margin_right = 268.0
@@ -213,7 +231,7 @@ __meta__ = {
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Control/Dialogs/MainMenu/ScrollContainer"]
 margin_right = 220.0
-margin_bottom = 284.0
+margin_bottom = 328.0
 size_flags_horizontal = 3
 
 [node name="LoadPath" type="Button" parent="Control/Dialogs/MainMenu/ScrollContainer/VBoxContainer"]
@@ -229,10 +247,17 @@ margin_bottom = 84.0
 rect_min_size = Vector2( 0, 40 )
 text = "Save Markers File"
 
-[node name="HSeparator" type="HSeparator" parent="Control/Dialogs/MainMenu/ScrollContainer/VBoxContainer"]
+[node name="SavePath2" type="Button" parent="Control/Dialogs/MainMenu/ScrollContainer/VBoxContainer"]
 margin_top = 88.0
 margin_right = 220.0
-margin_bottom = 92.0
+margin_bottom = 128.0
+rect_min_size = Vector2( 0, 40 )
+text = "Autosave Test Button"
+
+[node name="HSeparator" type="HSeparator" parent="Control/Dialogs/MainMenu/ScrollContainer/VBoxContainer"]
+margin_top = 132.0
+margin_right = 220.0
+margin_bottom = 136.0
 
 [node name="PointEditor" type="Button" parent="Control/Dialogs/MainMenu/ScrollContainer/VBoxContainer"]
 visible = false
@@ -243,21 +268,21 @@ rect_min_size = Vector2( 0, 40 )
 text = "Editor Panel"
 
 [node name="OpenEditorQuickPanel" type="Button" parent="Control/Dialogs/MainMenu/ScrollContainer/VBoxContainer"]
-margin_top = 96.0
+margin_top = 140.0
 margin_right = 220.0
-margin_bottom = 136.0
+margin_bottom = 180.0
 rect_min_size = Vector2( 0, 40 )
 text = "Editor Panel"
 
 [node name="HSeparator3" type="HSeparator" parent="Control/Dialogs/MainMenu/ScrollContainer/VBoxContainer"]
-margin_top = 140.0
-margin_right = 220.0
-margin_bottom = 144.0
-
-[node name="Ranges" type="Button" parent="Control/Dialogs/MainMenu/ScrollContainer/VBoxContainer"]
-margin_top = 148.0
+margin_top = 184.0
 margin_right = 220.0
 margin_bottom = 188.0
+
+[node name="Ranges" type="Button" parent="Control/Dialogs/MainMenu/ScrollContainer/VBoxContainer"]
+margin_top = 192.0
+margin_right = 220.0
+margin_bottom = 232.0
 rect_min_size = Vector2( 0, 40 )
 text = "Range Indicators"
 
@@ -278,14 +303,14 @@ rect_min_size = Vector2( 0, 40 )
 text = "Guacamole Script Editor"
 
 [node name="HSeparator4" type="HSeparator" parent="Control/Dialogs/MainMenu/ScrollContainer/VBoxContainer"]
-margin_top = 192.0
-margin_right = 220.0
-margin_bottom = 196.0
-
-[node name="Settings" type="Button" parent="Control/Dialogs/MainMenu/ScrollContainer/VBoxContainer"]
-margin_top = 200.0
+margin_top = 236.0
 margin_right = 220.0
 margin_bottom = 240.0
+
+[node name="Settings" type="Button" parent="Control/Dialogs/MainMenu/ScrollContainer/VBoxContainer"]
+margin_top = 244.0
+margin_right = 220.0
+margin_bottom = 284.0
 rect_min_size = Vector2( 0, 40 )
 text = "Settings"
 
@@ -311,9 +336,9 @@ margin_bottom = 284.0
 text = "Active Path"
 
 [node name="ExitButton" type="Button" parent="Control/Dialogs/MainMenu/ScrollContainer/VBoxContainer"]
-margin_top = 244.0
+margin_top = 288.0
 margin_right = 220.0
-margin_bottom = 284.0
+margin_bottom = 328.0
 rect_min_size = Vector2( 0, 40 )
 text = "Exit Burrito"
 
@@ -760,6 +785,20 @@ margin_right = 229.0
 margin_bottom = 42.0
 text = "Hide All"
 
+[node name="Popup" type="Popup" parent="Control/Dialogs"]
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="ConfirmationDialog" type="ConfirmationDialog" parent="Control/Dialogs/Popup"]
+visible = true
+margin_left = 447.0
+margin_top = 248.0
+margin_right = 647.0
+margin_bottom = 318.0
+dialog_text = "Unsaved changes to the marker data was found.
+Would you like to retrieve this data?"
+
 [node name="Border" type="Control" parent="Control"]
 visible = false
 anchor_right = 1.0
@@ -847,6 +886,7 @@ __meta__ = {
 mesh = SubResource( 3 )
 material/0 = SubResource( 4 )
 
+[connection signal="mouse_entered" from="Control/GlobalMenuButton/TextureRect/UnsavedData" to="Control/GlobalMenuButton/TextureRect/UnsavedData" method="_on_UnsavedData_mouse_entered"]
 [connection signal="pressed" from="Control/GlobalMenuButton/main_menu_toggle" to="." method="_on_main_menu_toggle_pressed"]
 [connection signal="pressed" from="Control/GlobalMenuButton/EditorQuckPanel/HBoxContainer/CloseEditorQuickPanel" to="." method="_on_CloseEditorQuickPanel_pressed"]
 [connection signal="pressed" from="Control/GlobalMenuButton/EditorQuckPanel/HBoxContainer/ChangeTexture" to="." method="_on_ChangeTexture_pressed"]
@@ -859,6 +899,7 @@ material/0 = SubResource( 4 )
 [connection signal="hide" from="Control/Dialogs/MainMenu" to="." method="_on_Dialog_hide"]
 [connection signal="pressed" from="Control/Dialogs/MainMenu/ScrollContainer/VBoxContainer/LoadPath" to="." method="_on_LoadPath_pressed"]
 [connection signal="pressed" from="Control/Dialogs/MainMenu/ScrollContainer/VBoxContainer/SavePath" to="." method="_on_SavePath_pressed"]
+[connection signal="pressed" from="Control/Dialogs/MainMenu/ScrollContainer/VBoxContainer/SavePath2" to="." method="_on_SavePath2_pressed"]
 [connection signal="pressed" from="Control/Dialogs/MainMenu/ScrollContainer/VBoxContainer/OpenEditorQuickPanel" to="." method="_on_OpenEditorQuickPanel_pressed"]
 [connection signal="pressed" from="Control/Dialogs/MainMenu/ScrollContainer/VBoxContainer/Ranges" to="." method="_on_RangesButton_pressed"]
 [connection signal="pressed" from="Control/Dialogs/MainMenu/ScrollContainer/VBoxContainer/Settings" to="." method="_on_Settings_pressed"]

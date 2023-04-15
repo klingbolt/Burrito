@@ -1,8 +1,20 @@
 extends Sprite3D
 
+var Waypoint = preload("res://waypoint.gd")
+
 var texture_path
 var category_name = ""
+var marker_pack = ""
 var is_editable = false
+var is_edited = false
+var waypoint_icon = Waypoint.Icon.new()
+
+func update_waypoint_icon():
+	self.waypoint_icon.clear_position()
+	var position = self.waypoint_icon.new_position()
+	position.set_x(translation[0])
+	position.set_y(translation[1])
+	position.set_z(translation[2])
 
 func set_icon_image(texture_path: String):
 	self.texture_path = texture_path
