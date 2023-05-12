@@ -33,7 +33,6 @@ var correct_player_position := Vector3(0,0,0)
 var compass_height: int = 0;
 var compass_width: int = 0;
 
-
 # A temporary setting able to be configured by the user. It is used to allow
 # for faster trail mesh generation. The higher the value the fewer samples are
 # taken for the MeshCSG leading to an overall lower number of polygons. 
@@ -222,7 +221,6 @@ func decode_frame_packet(spb: StreamPeerBuffer):
 	var new_feet_location = Vector3(player_position.x, player_position.y, -player_position.z)
 	$FeetLocation.translation = new_feet_location
 
-
 func decode_context_packet(spb: StreamPeerBuffer):
 	compass_width = spb.get_16()
 	compass_height = spb.get_16()
@@ -288,7 +286,6 @@ func reset_minimap_masks():
 		minimap_path.material.set_shader_param("minimap_corner", compass_corner1)
 		minimap_path.material.set_shader_param("minimap_corner2", compass_corner2)
 
-
 var markerdata = Waypoint.Waypoint.new()
 var marker_file_dir = "user://protobins/"
 var auto_save_dir = "user://auto_save_data/"
@@ -297,12 +294,15 @@ var auto_save_file_path = ""
 var marker_packs_loaded = Array()
 var marker_packs_edited = Array()
 var root 
+
+##########Node Connections###########
 onready var marker_packs = get_node("Control/Dialogs/MarkerPacks/MarkerPacks")
 onready var unsaved_data_icon = get_node("Control/GlobalMenuButton/TextureRect/UnsavedData")
 onready var icons = $Icons
 onready var paths = $Paths
 onready var minimap = $Control/MiniMap
 onready var local_data = get_node("Control/LocalData") 
+onready var auto_save_timer = get_node("Timer")
 
 func load_waypoint_markers(map_id):
 	self.markerdata.clear_category()
@@ -326,7 +326,7 @@ func load_waypoint_markers(map_id):
 			print("OK")
 		else:
 			print(Waypoint.PB_ERR)
-		#gen_map_markers()
+		gen_map_markers()
 		self.marker_packs_edited = self.marker_packs_loaded
 		self.unsaved_data_icon.visible = true
 		print(marker_packs_edited)
@@ -418,7 +418,7 @@ func _unhandled_input(event):
 			
 			
 ################################################################################
-#
+# Section of functions that handle the data transfer from proto files to memory 
 ################################################################################
 func clear_map_markers():
 	# Clear all the rendered assets to make way for the new ones
@@ -430,6 +430,7 @@ func clear_map_markers():
 
 	for icon in icons.get_children():
 		icon.queue_free()
+
 
 func gen_map_markers():
 	# Load the data from the markers
@@ -590,9 +591,6 @@ func segment_2D_paths (points: Array):
 	points_2d_array.append(points_2d)
 	return points_2d_array
 
-################################################################################
-#
-################################################################################
 func gen_new_icon(waypoint_icon): 
 	var position = waypoint_icon.get_position()
 	if position == null:
@@ -618,6 +616,12 @@ func gen_new_icon(waypoint_icon):
 	#icon_markers.append(new_icon)
 	icons.add_child(new_icon)
 
+################################################################################
+# Section of functions for saving changes to markers
+################################################################################
+func _on_Timer_timeout():
+	auto_saving()
+	
 func auto_saving():
 	self.markerdata.clear_category()
 	self.markerdata.clear_icon()
@@ -667,13 +671,8 @@ func manual_save():
 			file.remove(self.auto_save_file_path)
 		unsaved_data_icon.visible = false
 
-func _on_main_menu_toggle_pressed():
-	$Control/Dialogs/MainMenu.show()
-	set_maximal_mouse_block()
-
-func _on_FileDialog_file_selected(path):
-	pass
-
+################################################################################
+# Adjustment and gizmo functions
 ################################################################################
 # The adjust nodes button creates handles at all the node points to allow for
 # editing of them via in-game interface. (Nodes can only be edited if the input
@@ -748,6 +747,16 @@ func clear_adjustment_nodes():
 		$Gizmos.remove_child(child)
 		child.queue_free()
 
+################################################################################
+# Signal Functions
+################################################################################
+
+func _on_main_menu_toggle_pressed():
+	$Control/Dialogs/MainMenu.show()
+	set_maximal_mouse_block()
+
+func _on_FileDialog_file_selected(path):
+	pass
 
 func _on_Dialog_hide():
 	for dialog in $Control/Dialogs.get_children():
@@ -853,10 +862,8 @@ func _on_NewPathPoint_pressed():
 			minimap.add_child(new_2d_path)
 			new_2d_path.refresh_mesh()
 
-
 ################################################################################
-# open the save dialog window. When a path is selected
-# _on_SaveDialog_file_selected() will be called with the user specified path.
+# Saves all markers to the proto file for that map_id
 ################################################################################
 func _on_SavePath_pressed():
 	manual_save()
@@ -937,6 +944,7 @@ func _on_SnapSelectedToPlayer_pressed():
 	self.currently_selected_node.translation.x = self.player_position.x
 	self.currently_selected_node.translation.z = -self.player_position.z
 	self.currently_selected_node.translation.y = self.player_position.y
+
 
 func _on_SetActivePath_pressed():
 	if self.currently_selected_node.point_type == "icon":
