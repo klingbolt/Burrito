@@ -89,13 +89,11 @@ void move_supplementary_files(string input_directory, string output_directory) {
     }
 }
 
-
-
 void read_taco_directory(string input_path, map<string, Category>* marker_categories, vector<Parseable*>* parsed_pois) {
     if (has_suffix(input_path, ".xml")) {
         parse_xml_file(input_path, marker_categories, parsed_pois);
     }
-    else{
+    else {
         vector<string> xml_files = get_files_by_suffix(input_path, ".xml");
         for (const string& path : xml_files) {
             parse_xml_file(path, marker_categories, parsed_pois);
