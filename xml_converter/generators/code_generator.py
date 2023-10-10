@@ -1,272 +1,83 @@
 from jsonschema import validate  # type:ignore
 from jsonschema.exceptions import ValidationError  # type:ignore
-import yaml
 import frontmatter  # type:ignore
-from typing import Any, Dict, List, Tuple, Set, Optional, Final
+from typing import Any, Dict, List, Tuple, Set, Optional, Final, TypedDict
 import os
 import markdown
 from dataclasses import dataclass, field
 from jinja2 import Template, FileSystemLoader, Environment
 from jinja_helpers import UnindentBlocks
+from schema import string_t, array_t, enum_t, union_t, union_partial_t, pattern_dictionary_t, object_t, boolean_t, DefType
+
 
 SchemaType = Dict[str, Any]
-schema = """
-type: object
-properties:
-    type:
-        type: string
-        enum: [Int32, Fixed32, Float32, String, Boolean, MultiflagValue, Enum, CompoundValue, Custom, CompoundCustomClass]
-allOf:
-    #############################
-    # Int32 Type
-    #############################
-    - if:
-        properties:
-            type:
-                const: Int32
-      then:
-        additionalProperties: false
-        required: [{shared_fields}]
-        properties:
-            {shared_field_properties}
 
-    #############################
-    # Fixed32 Type
-    #############################
-    - if:
-        properties:
-            type:
-                const: Fixed32
-      then:
-        additionalProperties: false
-        required: [{shared_fields}]
-        properties:
-            {shared_field_properties}
+XML_ATTRIBUTE_REGEX: Final[str] = "^[A-Za-z]+$"
+PROTO_FIELD_REGEX: Final[str] = "^[a-z_.]+$"
+INTERNAL_VARIABLE_REGEX: Final[str] = "^[a-z_]+$"
 
-    #############################
-    # Float32 Type
-    #############################
-    - if:
-        properties:
-            type:
-                const: Float32
-      then:
-        additionalProperties: false
-        required: [{shared_fields}]
-        properties:
-            {shared_field_properties}
+shared_field_properties: Dict[str, DefType] = {
+    "type": string_t(),
+    "name": string_t(),
+    "applies_to": array_t(enum_t(["Icon", "Trail", "Category"])),
+    "xml_fields": array_t(string_t(pattern=XML_ATTRIBUTE_REGEX)),
+    "protobuf_field": string_t(pattern=PROTO_FIELD_REGEX),
+}
 
-    #############################
-    # String Type
-    #############################
-    - if:
-        properties:
-            type:
-                const: String
-      then:
-        additionalProperties: false
-        required: [{shared_fields}]
-        properties:
-            {shared_field_properties}
-
-    #############################
-    # Boolean Type
-    #############################
-    - if:
-        properties:
-            type:
-                const: Boolean
-      then:
-        additionalProperties: false
-        required: [{shared_fields}]
-        properties:
-            {shared_field_properties}
-
-    #############################
-    # MultiflagValue Type
-    #############################
-    - if:
-        properties:
-            type:
-                const: MultiflagValue
-      then:
-        additionalProperties: false
-        required: [{shared_fields}, flags]
-        properties:
-            {shared_field_properties}
-            flags:
-                type: object
-                patternProperties:
-                    "^[a-z_]+$":
-                        type: array
-                        items:
-                            type: string
-
-    #############################
-    # Enum Type
-    #############################
-    - if:
-        properties:
-            type:
-                const: Enum
-      then:
-        additionalProperties: false
-        required: [{shared_fields}, values]
-        properties:
-            {shared_field_properties}
-            values:
-                type: object
-                patternProperties:
-                    "^[a-z_]+$":
-                        type: array
-                        items:
-                            type: string
-
-    #############################
-    # CompoundValue Type
-    #############################
-    - if:
-        properties:
-            type:
-                const: CompoundValue
-      then:
-        additionalProperties: false
-        required: [{shared_fields}, xml_bundled_components, xml_separate_components, components]
-        properties:
-            {shared_field_properties}
-            xml_bundled_components:
-                type: array
-                items:
-                    type: string
-            xml_separate_components:
-                type: array
-                items:
-                    type: string
-            components:
-                type: array
-                items:
-                    type: object
-                    additionalProperties: false
-                    required: [name, type, xml_fields, protobuf_field, compatability]
-                    properties:
-                        name:
-                            type: string
-                        type:
-                            type: string
-                            enum: [Int32, Fixed32, Float32]
-                        xml_fields:
-                            type: array
-                            items:
-                                type: string
-                                pattern: "^[A-Za-z]+$"
-                        protobuf_field:
-                            type: string
-                            pattern: "^[a-z_.]+$"
-                        compatability:
-                            type: array
-                            items:
-                                type: string
-                                enum: [BlishHUD, Burrito, TacO]
-    #############################
-    # CompoundCustomClass Type
-    #############################
-    - if:
-        properties:
-            type:
-                const: CompoundCustomClass
-      then:
-        additionalProperties: false
-        required: [{shared_fields}, xml_bundled_components, xml_separate_components, class]
-        properties:
-            {shared_field_properties}
-            class:
-                type: string
-            xml_bundled_components:
-                type: array
-                items:
-                    type: string
-            xml_separate_components:
-                type: array
-                items:
-                    type: string
-            components:
-                type: array
-                items:
-                    type: object
-                    additionalProperties: false
-                    required: [name, type, xml_fields, protobuf_field, compatability]
-                    properties:
-                        name:
-                            type: string
-                        type:
-                            type: string
-                            enum: [Int32, Fixed32, Float32]
-                        xml_fields:
-                            type: array
-                            items:
-                                type: string
-                                pattern: "^[A-Za-z]+$"
-                        protobuf_field:
-                            type: string
-                            pattern: "^[a-z_.]+$"
-                        compatability:
-                            type: array
-                            items:
-                                type: string
-                                enum: [BlishHUD, Burrito, TacO]
-
-    #############################
-    # Custom Type
-    #############################
-    - if:
-        properties:
-            type:
-                const: Custom
-      then:
-        additionalProperties: false
-        required: [{shared_fields}, class]
-        properties:
-            {shared_field_properties}
-            class:
-                type: string
-            side_effects:
-                type: array
-                items:
-                    type: string
-            uses_file_path:
-                type: boolean
-
-""".format(
-    shared_field_properties="""type:
-                type: string
-            name:
-                type: string
-            applies_to:
-                type: array
-                items:
-                    type: string
-                    enum: [Icon, Trail, Category]
-            compatability:
-                type: array
-                items:
-                    type: string
-                    enum: [BlishHUD, Burrito, TacO]
-            xml_fields:
-                type: array
-                items:
-                    type: string
-                    pattern: "^[A-Za-z]+$"
-            protobuf_field:
-                type: string
-                pattern: "^[a-z_.]+$"
-    """,
-    shared_fields="type, name, applies_to, compatability, xml_fields, protobuf_field"
-)
+schema = union_t({
+    "Int32": union_partial_t(required=shared_field_properties),
+    "Fixed32": union_partial_t(required=shared_field_properties),
+    "Float32": union_partial_t(required=shared_field_properties),
+    "String": union_partial_t(required=shared_field_properties),
+    "Boolean": union_partial_t(required=shared_field_properties),
+    "MultiflagValue": union_partial_t(
+        required={**shared_field_properties, **{
+            "flags": pattern_dictionary_t({INTERNAL_VARIABLE_REGEX: array_t(string_t())}),
+        }},
+    ),
+    "Enum": union_partial_t(
+        required={**shared_field_properties, **{
+            "values": pattern_dictionary_t({INTERNAL_VARIABLE_REGEX: array_t(string_t())})
+        }}
+    ),
+    "CompoundValue": union_partial_t(
+        required={**shared_field_properties, **{
+            "xml_bundled_components": array_t(string_t()),
+            "xml_separate_components": array_t(string_t()),
+            "components": array_t(object_t({
+                "name": string_t(),
+                "type": enum_t(["Int32", "Fixed32", "Float32"]),
+                "xml_fields": array_t(string_t(XML_ATTRIBUTE_REGEX)),
+                "protobuf_field": string_t(PROTO_FIELD_REGEX),
+            })),
+        }}
+    ),
+    "CompoundCustomClass": union_partial_t(
+        required={**shared_field_properties, **{
+            "class": string_t(),
+            "xml_bundled_components": array_t(string_t()),
+            "xml_separate_components": array_t(string_t()),
+            "components": array_t(object_t({
+                "name": string_t(),
+                "type": enum_t(["Int32", "Fixed32", "Float32"]),
+                "xml_fields": array_t(string_t(XML_ATTRIBUTE_REGEX)),
+                "protobuf_field": string_t(PROTO_FIELD_REGEX),
+            })),
+        }}
+    ),
+    "Custom": union_partial_t(
+        required={**shared_field_properties, **{"class": string_t()}},
+        optional={
+            "side_effects": array_t(string_t()),
+            "uses_file_path": boolean_t(),
+        }
+    ),
+})
 
 
 def validate_front_matter_schema(front_matter: Any) -> str:
     try:
-        validate(front_matter, yaml.safe_load(schema))
+        validate(front_matter, schema)
     except ValidationError as e:
         return "Error Message: {} (Path: {}".format(e.message, e.json_path)
     return ""
@@ -285,7 +96,6 @@ class FieldRow:
     alternate_xml_attributes: List[str]
     binary_field: str
     data_type: str
-    supported_by_html: str
     usable_on_html: str
     example: str
     valid_values_html: str
@@ -294,17 +104,20 @@ class FieldRow:
     description: str
 
 
-# TODO: Eventually replace all references to `doc_type_to_cpp_type` with
-# references to `documentation_type_data` because they contain the same data
-doc_type_to_cpp_type: Dict[str, str] = {
-    "Fixed32": "int",
-    "Int32": "int",
-    "Boolean": "bool",
-    "Float32": "float",
-    "String": "std::string",
-}
+################################################################################
+# DocumentationTypeData
+#
+# A type definition to indicate what information should be included in the
+# documentation_type_data variable.
+################################################################################
+class DocumentationTypeData(TypedDict):
+    class_name: str
+    cpp_type: str
 
-documentation_type_data = {
+
+# A map between the documentation types, and useful class name info related to
+# that type.
+documentation_type_data: Dict[str, DocumentationTypeData] = {
     "Fixed32": {
         "class_name": "int",
         "cpp_type": "int",
@@ -342,7 +155,15 @@ class AttributeVariable:
     xml_bundled_components: List[str] = field(default_factory=list)
     attribute_flag_name: Optional[str] = ""
     write_to_xml: bool = True
-    is_trigger: bool = False
+
+    # The CPP code to inject into the variable getter to drill down to the
+    # variable we are looking for. eg ".trigger()" or ".one().two()"
+    proto_drilldown_calls: str = ""
+
+    # The CPP code to inject into the variable setter to drill down to the
+    # variable we are looking for. eg ".mutable_trigger()" or "mutable_one()->mutable_two()->"
+    mutable_proto_drilldown_calls: str = ""
+
     uses_file_path: bool = False
     is_component: bool = False
 
@@ -394,7 +215,7 @@ class Generator:
     def delete_generated_docs(self, dir_path: str) -> None:
         for filepath in os.listdir(dir_path):
             filepath = os.path.join(dir_path, filepath)
-            if filepath.endswith("_gen.hpp") or filepath.endswith("_gen.cpp") or filepath.endswith("_gen.html"):
+            if filepath.endswith("_gen.hpp") or filepath.endswith("_gen.cpp") or filepath.endswith(".html"):
                 os.remove(filepath)
 
     def load_input_doc(self, dir_path: str) -> None:
@@ -517,8 +338,6 @@ class Generator:
                 xml_fields: List[str] = []
                 side_effects: List[str] = []
                 write_to_xml: bool = True
-                protobuf_field: str = ""
-                is_trigger: bool = False
                 default_xml_field: str = ""
 
                 args: List[str] = XML_ATTRIBUTE_PARSER_DEFAULT_ARGUMENTS.copy()
@@ -549,12 +368,10 @@ class Generator:
                     xml_fields.append(lowercase(x, delimiter=""))
                 default_xml_field = fieldval['xml_fields'][0]
 
-                if fieldval["protobuf_field"].startswith("trigger"):
-                    is_trigger = True
-                    protobuf_field = fieldval["protobuf_field"].split('.')[1]
-                else:
-                    is_trigger = False
-                    protobuf_field = fieldval["protobuf_field"]
+                proto_drilldown_calls: str
+                mutable_proto_drilldown_calls: str
+                protobuf_field: str
+                proto_drilldown_calls, mutable_proto_drilldown_calls, protobuf_field = split_field_into_drilldown(fieldval["protobuf_field"])
 
                 if fieldval.get("uses_file_path", False):
                     args.append("base_dir")
@@ -581,7 +398,7 @@ class Generator:
                         component_attribute_variable = AttributeVariable(
                             attribute_name=attribute_name + "." + component_name,
                             attribute_type="CompoundValue",
-                            cpp_type=doc_type_to_cpp_type[component['type']],
+                            cpp_type=documentation_type_data[component['type']]["cpp_type"],
                             class_name=component_class_name,
                             xml_fields=component_xml_fields,
                             default_xml_field=component_default_xml_field,
@@ -604,7 +421,8 @@ class Generator:
                     xml_fields=xml_fields,
                     default_xml_field=default_xml_field,
                     protobuf_field=protobuf_field,
-                    is_trigger=is_trigger,
+                    proto_drilldown_calls=proto_drilldown_calls,
+                    mutable_proto_drilldown_calls=mutable_proto_drilldown_calls,
                     args=args,
                     write_to_xml=write_to_xml,
                     attribute_flag_name=attribute_name + "_is_set",
@@ -636,7 +454,6 @@ class Generator:
         attribute_variable: AttributeVariable
         metadata: Dict[str, SchemaType] = {}
         xml_fields: List[str] = []
-        is_trigger: bool = False
         template: Dict[str, Template] = {
             "MultiflagValue": env.get_template("multiflagvalue.cpp"),
             "CompoundValue": env.get_template("compoundvalue.cpp"),
@@ -653,12 +470,10 @@ class Generator:
             metadata[filepath] = self.data[filepath].metadata
             attribute_name = attribute_name_from_markdown_data(metadata[filepath]['name'])
 
-            if metadata[filepath]["protobuf_field"].startswith("trigger"):
-                is_trigger = True
-                protobuf_field = metadata[filepath]["protobuf_field"].split('.')[1]
-            else:
-                is_trigger = False
-                protobuf_field = metadata[filepath]["protobuf_field"]
+            proto_drilldown_calls: str
+            mutable_proto_drilldown_calls: str
+            protobuf_field: str
+            proto_drilldown_calls, mutable_proto_drilldown_calls, protobuf_field = split_field_into_drilldown(metadata[filepath]["protobuf_field"])
 
             if metadata[filepath]['type'] == "MultiflagValue":
                 for flag in metadata[filepath]['flags']:
@@ -673,14 +488,15 @@ class Generator:
                         class_name=attribute_name,
                         xml_fields=xml_fields,
                         protobuf_field=protobuf_field,
-                        is_trigger=is_trigger,
+                        proto_drilldown_calls=proto_drilldown_calls,
+                        mutable_proto_drilldown_calls=mutable_proto_drilldown_calls
                     )
                     attribute_variables.append(attribute_variable)
 
             elif metadata[filepath]['type'] == "CompoundValue":
                 for component in metadata[filepath]['components']:
                     xml_fields = []
-                    if component['type'] not in doc_type_to_cpp_type:
+                    if component['type'] not in documentation_type_data:
                         raise ValueError("Unexpected type for component. Look at markdown file {attribute_name}".format(
                             attribute_name=attribute_name
                         ))
@@ -692,11 +508,12 @@ class Generator:
                     attribute_variable = AttributeVariable(
                         attribute_name=component_attribute_name,
                         attribute_type=metadata[filepath]['type'],
-                        cpp_type=doc_type_to_cpp_type[component['type']],
+                        cpp_type=documentation_type_data[component['type']]["cpp_type"],
                         class_name=attribute_name,
                         xml_fields=xml_fields,
                         protobuf_field=component["protobuf_field"],
-                        is_trigger=is_trigger,
+                        proto_drilldown_calls=proto_drilldown_calls,
+                        mutable_proto_drilldown_calls=mutable_proto_drilldown_calls
                     )
                     attribute_variables.append(attribute_variable)
 
@@ -712,7 +529,8 @@ class Generator:
                         class_name=attribute_name,
                         xml_fields=xml_fields,
                         protobuf_field=protobuf_field,
-                        is_trigger=is_trigger,
+                        proto_drilldown_calls=proto_drilldown_calls,
+                        mutable_proto_drilldown_calls=mutable_proto_drilldown_calls
                     )
                     attribute_variables.append(attribute_variable)
 
@@ -775,7 +593,7 @@ class Generator:
             for field_row in field_rows:
                 complete_field_row_list.append(field_row)
 
-            with open(os.path.join(output_directory, page + "_gen.html"), 'w') as f:
+            with open(os.path.join(output_directory, page + ".html"), 'w') as f:
 
                 f.write(template.render(
                     generated_doc=generated_doc,
@@ -902,7 +720,6 @@ class Generator:
                 alternate_xml_attributes=fieldval["xml_fields"][1:],
                 binary_field=fieldval["protobuf_field"],
                 data_type=fieldval["type"],
-                supported_by_html="<br>".join(fieldval["compatability"]),
                 usable_on_html="<br>".join(fieldval["applies_to"]),
                 example=example,
                 valid_values_html=valid_values,
@@ -919,7 +736,6 @@ class Generator:
                         alternate_xml_attributes=component_field["xml_fields"][1:],
                         binary_field=fieldval["protobuf_field"] + "." + component_field["protobuf_field"],
                         data_type=component_field["type"],
-                        supported_by_html="<br>".join(component_field["compatability"]),
                         usable_on_html="<br>".join(fieldval["applies_to"]),
                         example=self.build_example(
                             type=component_field["type"],
@@ -934,6 +750,23 @@ class Generator:
                     ))
 
         return template.render(field_rows=field_rows), field_rows
+
+
+################################################################################
+# split_field_into_drilldown
+#
+# Splits the field string into a cpp drilldown function call stack and the
+# final proto field name.
+# EG:
+#   field: "trigger.subclass.fieldname"
+#   returns: (".trigger().subclass()", "mutable_trigger()->mutable_subclass()->", "fieldname")
+################################################################################
+def split_field_into_drilldown(field: str) -> Tuple[str, str, str]:
+    components = field.split(".")
+    proto_drilldown_calls = "".join([".{}()".format(x) for x in components[:-1]])
+    mutable_proto_drilldown_calls = "".join(["mutable_{}()->".format(x) for x in components[:-1]])
+    protobuf_field = components[-1]
+    return proto_drilldown_calls, mutable_proto_drilldown_calls, protobuf_field
 
 
 ############################################################################
