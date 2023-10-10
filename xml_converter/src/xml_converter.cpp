@@ -91,7 +91,7 @@ void move_supplementary_files(string input_directory, string output_directory) {
 }
 
 void read_taco_directory(string input_path, map<string, Category>* marker_categories, vector<Parseable*>* parsed_pois) {
-    if (filesystem::is_regular_file(input_path)){ 
+    if (filesystem::is_regular_file(input_path)) {
         if (has_suffix(input_path, ".xml")) {
             parse_xml_file(input_path, marker_categories, parsed_pois);
         }
@@ -106,11 +106,9 @@ void read_taco_directory(string input_path, map<string, Category>* marker_catego
         }
     }
     else {
-        cout  << "Error: Unknown file type" << endl;
+        cout << "Error: Unknown file type" << endl;
     }
 }
-
-
 
 void write_taco_directory(string output_path, map<string, Category>* marker_categories, vector<Parseable*>* parsed_pois) {
     // TODO: Exportion of XML Marker Packs File Structure #111
