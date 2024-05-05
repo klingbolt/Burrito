@@ -14,8 +14,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 void xml_attribute_to_marker_category(
     rapidxml::xml_attribute<>* input,
-    std::vector<XMLError*>*,
-    XMLReaderState*,
+    std::vector<XMLError*>* errors,
+    XMLReaderState* state,
     MarkerCategory* value,
     bool* is_set) {
     value->category = get_attribute_value(input);
@@ -29,7 +29,7 @@ void xml_attribute_to_marker_category(
 ////////////////////////////////////////////////////////////////////////////////
 std::string marker_category_to_xml_attribute(
     const std::string& attribute_name,
-    XMLWriterState*,
+    XMLWriterState* state,
     const MarkerCategory* value) {
     return " " + attribute_name + "=\"" + value->category + "\"";
 }
@@ -41,7 +41,7 @@ std::string marker_category_to_xml_attribute(
 ////////////////////////////////////////////////////////////////////////////////
 void proto_to_marker_category(
     waypoint::Category input,
-    ProtoReaderState*,
+    ProtoReaderState* state,
     MarkerCategory* value,
     bool* is_set) {
     MarkerCategory marker_category;
@@ -57,7 +57,7 @@ void proto_to_marker_category(
 ////////////////////////////////////////////////////////////////////////////////
 void marker_category_to_proto(
     MarkerCategory value,
-    ProtoWriterState*,
+    ProtoWriterState* state,
     std::function<void(waypoint::Category*)> setter) {
     waypoint::Category* category = new waypoint::Category();
     category->set_name(value.category);

@@ -15,7 +15,7 @@ using namespace std;
 void xml_attribute_to_species_filter(
     rapidxml::xml_attribute<>* input,
     std::vector<XMLError*>* errors,
-    XMLReaderState*,
+    XMLReaderState* state,
     SpeciesFilter* value,
     bool* is_set) {
     SpeciesFilter species_filter;
@@ -55,7 +55,7 @@ void xml_attribute_to_species_filter(
 
 string species_filter_to_xml_attribute(
     const std::string& attribute_name,
-    XMLWriterState*,
+    XMLWriterState* state,
     const SpeciesFilter* value) {
     vector<string> flag_values;
     if (value->asura == true) {
@@ -79,7 +79,7 @@ string species_filter_to_xml_attribute(
 
 void proto_to_species_filter(
     waypoint::SpeciesFilter input,
-    ProtoReaderState*,
+    ProtoReaderState* state,
     SpeciesFilter* value,
     bool* is_set) {
     SpeciesFilter species_filter;
@@ -94,7 +94,7 @@ void proto_to_species_filter(
 
 void species_filter_to_proto(
     SpeciesFilter value,
-    ProtoWriterState*,
+    ProtoWriterState* state,
     std::function<void(waypoint::SpeciesFilter*)> setter) {
     waypoint::SpeciesFilter* proto_species_filter = new waypoint::SpeciesFilter();
     bool should_write = false;

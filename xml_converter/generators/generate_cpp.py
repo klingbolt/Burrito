@@ -146,11 +146,8 @@ class CPPInclude:
 def write_cpp_classes(
     output_directory: str,
     data: Dict[str, Document],
-) -> List[str]:
+) -> None:
     print("Writing XML Node Cpp Classes")
-
-    written_files: List[str] = []
-
     file_loader = FileSystemLoader('cpp_templates')
     env = Environment(
         loader=file_loader,
@@ -178,23 +175,17 @@ def write_cpp_classes(
             if attribute_variable.class_name == "marker_category":
                 attributes_of_type_marker_category.append(attribute_variable.attribute_name)
 
-        hpp_filepath = os.path.join(output_directory, lowercase(cpp_class) + "_gen.hpp")
-        write_if_different(
-            path=hpp_filepath,
-            contents=header_template.render(
+        with open(os.path.join(output_directory, lowercase(cpp_class) + "_gen.hpp"), 'w') as f:
+            f.write(header_template.render(
                 cpp_class=cpp_class,
                 attribute_variables=sorted(attribute_variables, key=get_attribute_variable_key),
                 cpp_includes=cpp_includes,
                 cpp_class_header=lowercase(cpp_class),
                 attributes_of_type_marker_category=attributes_of_type_marker_category,
-            ),
-        )
-        written_files.append(hpp_filepath)
+            ))
 
-        cpp_filepath = os.path.join(output_directory, lowercase(cpp_class) + "_gen.cpp")
-        write_if_different(
-            path=cpp_filepath,
-            contents=code_template.render(
+        with open(os.path.join(output_directory, lowercase(cpp_class) + "_gen.cpp"), 'w') as f:
+            f.write(code_template.render(
                 cpp_class=cpp_class,
                 cpp_includes=cpp_includes,
                 cpp_class_header=lowercase(cpp_class),
@@ -202,11 +193,7 @@ def write_cpp_classes(
                 attribute_variables=sorted(attribute_variables, key=get_attribute_variable_key),
                 enumerate=enumerate,
                 attributes_of_type_marker_category=attributes_of_type_marker_category,
-            ),
-        )
-        written_files.append(cpp_filepath)
-
-    return written_files
+            ))
 
 
 def build_custom_function_data(config: Dict[str, Any]) -> Tuple[str, List[str]]:

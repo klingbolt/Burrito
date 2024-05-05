@@ -3,5 +3,5 @@
 #include <string>
 
 struct XMLWriterState {
-    std::string marker_pack_root_directory;
+    std::string filedir;
 };

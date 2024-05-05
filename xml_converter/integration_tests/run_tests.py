@@ -5,13 +5,19 @@ import difflib
 import subprocess
 import re
 import os
-from typing import List, Optional, Tuple
+from typing import List, Optional, Final, Tuple
 from src.testcase_loader import load_testcases
 import shutil
 from src.proto_utils import compare_protos, compare_binary_file
 
 # Path to compiled C++ executable
 xml_converter_binary_path: str = "../build/xml_converter"
+
+arg_input_xml: Final[str] = "--input-taco-path"
+arg_output_xml: Final[str] = "--output-taco-path"
+arg_input_proto: Final[str] = "--input-waypoint-path"
+arg_output_proto: Final[str] = "--output-waypoint-path"
+arg_split_proto: Final[str] = "--output-split-waypoint-path"
 
 
 def run_xml_converter(
@@ -26,15 +32,15 @@ def run_xml_converter(
     cmd: List[str] = [xml_converter_binary_path]
 
     if input_xml:
-        cmd += ["--input-taco-path"] + input_xml
+        cmd += [arg_input_xml] + input_xml
     if output_xml:
-        cmd += ["--output-taco-path"] + output_xml
+        cmd += [arg_output_xml] + output_xml
     if input_proto:
-        cmd += ["--input-waypoint-path"] + input_proto
+        cmd += [arg_input_proto] + input_proto
     if output_proto:
-        cmd += ["--output-waypoint-path"] + output_proto
+        cmd += [arg_output_proto] + output_proto
     if split_output_proto:
-        cmd += ["--output-split-waypoint-path"] + [split_output_proto]
+        cmd += [arg_split_proto] + [split_output_proto]
 
     # Run the C++ program and capture its output
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -83,7 +89,6 @@ def remove_ansii_color_escapecodes(lines: List[str]) -> List[str]:
 # then this function throws an error
 ################################################################################
 def rebuild_xml_converter_binary() -> None:
-    print("Building XML Converter Binary")
     cmake_build_directory = "../build"
 
     # Store the current working directory
@@ -106,8 +111,6 @@ def rebuild_xml_converter_binary() -> None:
         os.chdir(original_cwd)
     else:
         print(f"Directory '{cmake_build_directory}' does not exist.")
-
-    print()
 
 
 ################################################################################
@@ -140,9 +143,8 @@ def remove_ignored_lines(lines: List[str]) -> List[str]:
 
 
 def main() -> bool:
-    parser = argparse.ArgumentParser(description="A test harness for evaluating the output of the xmlconverter program.")
-    parser.add_argument("-v", "--verbose", help="Prints the results from xmlconverter in JSON format.", action="store_true")
-    parser.add_argument("--filter", help="Filter which tests to run by a regex pattern.", type=str)
+    parser = argparse.ArgumentParser(description="A test harness for evaluating the output of the xmlconverter program")
+    parser.add_argument("-v", "--verbose", help="Prints the results from xmlconverter in JSON format", action="store_true")
     args = parser.parse_args()
 
     output_parent_dirpath = "./outputs"
@@ -155,13 +157,7 @@ def main() -> bool:
 
     rebuild_xml_converter_binary()
 
-    test_run_count = 0
-
     for testcase in load_testcases():
-        if args.filter is not None:
-            if not re.match(args.filter, testcase.name):
-                continue
-
         xml_output_dir_path = os.path.join(output_parent_dirpath, "xml", testcase.name)
         proto_output_dir_path = os.path.join(output_parent_dirpath, "proto", testcase.name)
 
@@ -211,11 +207,6 @@ def main() -> bool:
             print(f"Success: test {testcase.name}")
 
         all_tests_passed &= testcase_passed
-        test_run_count += 1
-
-    if test_run_count == 0:
-        print("No Tests Were Run")
-        return False
 
     return all_tests_passed
 
@@ -272,7 +263,7 @@ def diff_dirs(actual_output_dir: str, expected_output_dir: str) -> bool:
 
         if len_diff(diff) != 0:
             diff_found = True
-            print("Output was incorrect for test")
+            print("XML output was incorrect for test")
             for line in diff:
                 print(line)
 
@@ -304,8 +295,9 @@ def get_paths(directory: str) -> Tuple[List[str], List[str]]:
 
 
 if __name__ == "__main__":
-    all_tests_passed = main()
+    returncode = main()
 
-    # Exit with an error if not all the tests passed so we can catch it in CI
-    if not all_tests_passed:
+    if returncode:
+        exit(0)
+    else:
         exit(1)

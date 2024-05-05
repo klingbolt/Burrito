@@ -15,7 +15,7 @@ using namespace std;
 void xml_attribute_to_profession_filter(
     rapidxml::xml_attribute<>* input,
     std::vector<XMLError*>* errors,
-    XMLReaderState*,
+    XMLReaderState* state,
     ProfessionFilter* value,
     bool* is_set) {
     ProfessionFilter profession_filter;
@@ -71,7 +71,7 @@ void xml_attribute_to_profession_filter(
 
 string profession_filter_to_xml_attribute(
     const std::string& attribute_name,
-    XMLWriterState*,
+    XMLWriterState* state,
     const ProfessionFilter* value) {
     vector<string> flag_values;
     if (value->guardian == true) {
@@ -107,7 +107,7 @@ string profession_filter_to_xml_attribute(
 
 void proto_to_profession_filter(
     waypoint::ProfessionFilter input,
-    ProtoReaderState*,
+    ProtoReaderState* state,
     ProfessionFilter* value,
     bool* is_set) {
     ProfessionFilter profession_filter;
@@ -126,7 +126,7 @@ void proto_to_profession_filter(
 
 void profession_filter_to_proto(
     ProfessionFilter value,
-    ProtoWriterState*,
+    ProtoWriterState* state,
     std::function<void(waypoint::ProfessionFilter*)> setter) {
     waypoint::ProfessionFilter* proto_profession_filter = new waypoint::ProfessionFilter();
     bool should_write = false;

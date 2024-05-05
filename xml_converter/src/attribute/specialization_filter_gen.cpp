@@ -15,7 +15,7 @@ using namespace std;
 void xml_attribute_to_specialization_filter(
     rapidxml::xml_attribute<>* input,
     std::vector<XMLError*>* errors,
-    XMLReaderState*,
+    XMLReaderState* state,
     SpecializationFilter* value,
     bool* is_set) {
     SpecializationFilter specialization_filter;
@@ -404,7 +404,7 @@ void xml_attribute_to_specialization_filter(
 
 string specialization_filter_to_xml_attribute(
     const std::string& attribute_name,
-    XMLWriterState*,
+    XMLWriterState* state,
     const SpecializationFilter* value) {
     vector<string> flag_values;
     if (value->elementalist_tempest == true) {
@@ -629,7 +629,7 @@ string specialization_filter_to_xml_attribute(
 
 void proto_to_specialization_filter(
     waypoint::SpecializationFilter input,
-    ProtoReaderState*,
+    ProtoReaderState* state,
     SpecializationFilter* value,
     bool* is_set) {
     SpecializationFilter specialization_filter;
@@ -711,7 +711,7 @@ void proto_to_specialization_filter(
 
 void specialization_filter_to_proto(
     SpecializationFilter value,
-    ProtoWriterState*,
+    ProtoWriterState* state,
     std::function<void(waypoint::SpecializationFilter*)> setter) {
     waypoint::SpecializationFilter* proto_specialization_filter = new waypoint::SpecializationFilter();
     bool should_write = false;

@@ -14,8 +14,8 @@ using namespace std;
 
 void xml_attribute_to_unique_id(
     rapidxml::xml_attribute<>* input,
-    std::vector<XMLError*>*,
-    XMLReaderState*,
+    std::vector<XMLError*>* errors,
+    XMLReaderState* state,
     UniqueId* value,
     bool* is_set) {
     string base64;
@@ -32,7 +32,7 @@ void xml_attribute_to_unique_id(
 ////////////////////////////////////////////////////////////////////////////////
 string unique_id_to_xml_attribute(
     const string& attribute_name,
-    XMLWriterState*,
+    XMLWriterState* state,
     const UniqueId* value) {
     return " " + attribute_name + "=\"" + base64_encode(&(value->guid[0]), value->guid.size()) + "\"";
 }
@@ -44,7 +44,7 @@ string unique_id_to_xml_attribute(
 ////////////////////////////////////////////////////////////////////////////////
 void proto_to_unique_id(
     std::string input,
-    ProtoReaderState*,
+    ProtoReaderState* state,
     UniqueId* value,
     bool* is_set) {
     UniqueId unique_id;
@@ -61,7 +61,7 @@ void proto_to_unique_id(
 ////////////////////////////////////////////////////////////////////////////////
 void unique_id_to_proto(
     UniqueId value,
-    ProtoWriterState*,
+    ProtoWriterState* state,
     std::function<void(std::string)> setter) {
     setter(std::string(value.guid.begin(), value.guid.end()));
 }
