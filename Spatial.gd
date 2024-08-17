@@ -344,17 +344,17 @@ func decode_context_packet(spb: StreamPeerBuffer):
 	if self.map_id != old_map_id:
 		print("New Map")
 		var old_textue_path: String = ""
+		if self.next_texture_id != 0:
+			old_textue_path = self.waypoint_data.get_textures()[self.next_texture_id].get_filepath()
 		if old_map_id != 0 and not read_hash(old_map_id) == make_hash(self.waypoint_data.to_bytes()):
 			print("Saving Old Map")
-			old_textue_path = self.waypoint_data.get_textures()[self.next_texture_id].get_filepath()
 			save_map_data(old_map_id)
 		print("Loading New Map")
 		load_waypoint_markers(self.map_id)
-		if old_textue_path != "":
-			self.next_texture_id = get_texture_index(old_textue_path)
-			if self.next_texture_id == -1:
-				self.waypoint_data.add_textures().set_filepath(old_textue_path)
-				self.next_texture_id = self.waypoint_data.get_textures().size() - 1
+		self.next_texture_id = get_texture_index(old_textue_path)
+		if self.next_texture_id == -1:
+			self.waypoint_data.add_textures().set_filepath(old_textue_path)
+			self.next_texture_id = self.waypoint_data.get_textures().size() - 1
 
 
 	reset_minimap_masks()
@@ -620,6 +620,7 @@ func gen_new_trail(waypoint_trail: Waypoint.Trail, category_item: TreeItem) -> A
 func gen_new_icon(waypoint_icon: Waypoint.Icon, category_item: TreeItem):
 	var texture_id: int = waypoint_icon.get_texture_id()
 	if texture_id == null:
+		print(texture_id)
 		var category_data = category_item.get_metadata(0)
 		print("Warning: No texture found in " , category_data.waypoint_category.get_name())
 	var texture_path: String = self.unsaved_markers_dir +  self.waypoint_data.get_textures()[texture_id].get_filepath()
@@ -1101,7 +1102,7 @@ func _on_ImportPackDialog_dir_selected(dir):
 		"--input-taco-path", dir,
 		# TODO: This line is not working as intended and needs to be investigated
 		# "--input-waypoint-path", user_data_dir.plus_file("protobin"),
-		"--output-waypoint-path", user_data_dir.plus_file("protobin"),
+		#"--output-waypoint-path", user_data_dir.plus_file("protobin"),
 		"--output-split-waypoint-path", ProjectSettings.globalize_path(self.unsaved_markers_dir)
 	]
 	FileHandler.call_xml_converter(args)

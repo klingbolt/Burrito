@@ -1,13 +1,13 @@
 <OverlayData>
     <MarkerCategory Name="mycategory" XPos="169.81" YPos="210.65" ZPos="215.83"></MarkerCategory>
 
-    <MarkerCategory Name="NestedLevel1" XPos="000" MapID="999">
-        <MarkerCategory Name="NestedLevel2" YPos="222">
+    <MarkerCategory Name="nestedlevel1" XPos="000" MapID="999">
+        <MarkerCategory Name="nestedlevel2" YPos="222">
             <MarkerCategory Name="NestedLevel3" ZPos="333"></MarkerCategory>
         </MarkerCategory>
     </MarkerCategory>
 
-    <MarkerCategory Name="NestedLevel1" XPos="111"></MarkerCategory>
+    <MarkerCategory Name="nestedlevel1" XPos="111"></MarkerCategory>
 
     <POIs>
         <POI Type="mycategory" MapID="50" />

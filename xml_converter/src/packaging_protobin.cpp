@@ -29,7 +29,7 @@ void parse_waypoint_categories(
     map<string, Category>* marker_categories,
     vector<Parseable*>* parsed_pois,
     ProtoReaderState* state) {
-    full_category_name += proto_category.name();
+    full_category_name += lowercase(proto_category.name());
     Category* this_category = &(*marker_categories)[full_category_name];
 
     this_category->parse_protobuf(proto_category, state);
@@ -40,6 +40,7 @@ void parse_waypoint_categories(
         // TODO: The field category in Icon is being deprciated
         // This overwrites any icon.category with its position in the heirarchy
         icon->category.category = full_category_name;
+        icon->category_is_set = true;
         parsed_pois->push_back(icon);
     }
     for (int i = 0; i < proto_category.trail_size(); i++) {
@@ -48,6 +49,7 @@ void parse_waypoint_categories(
         // TODO: The field category in Trail is being deprciated
         // This overwrites any trail.category with its position in the heirarchy
         trail->category.category = full_category_name;
+        trail->category_is_set = true;
         parsed_pois->push_back(trail);
     }
 
@@ -93,7 +95,7 @@ MaybeCategory build_category_objects(
     const Category* category,
     const StringHierarchy& category_filter,
     const std::map<string, std::vector<Parseable*>>& category_to_pois,
-    vector<string>* category_vector,
+    string category_name,
     ProtoWriterState* state) {
     waypoint::Category category_proto = category->as_protobuf(state);
     bool has_valid_contents = false;
@@ -102,14 +104,13 @@ MaybeCategory build_category_objects(
 
     for (map<string, Category>::const_iterator it = category->children.begin(); it != category->children.end(); it++) {
         // This is currently a copy operation which is kind expensive
-        category_vector->push_back(it->first);
-
-        if (category_filter.in_hierarchy(*category_vector)) {
+        cout << category_name << endl;
+        if (category_filter.in_hierarchy(split(category_name, "."))) {
             MaybeCategory child_category = build_category_objects(
                 &it->second,
                 category_filter,
                 category_to_pois,
-                category_vector,
+                it->first,
                 state);
 
             if (child_category.is_category) {
@@ -117,12 +118,10 @@ MaybeCategory build_category_objects(
                 category_proto.add_children()->MergeFrom(child_category.category);
             }
         }
-        category_vector->pop_back();
     }
 
     // This is a pretty expensive operation
-    string full_category_name = join(*category_vector, ".");
-    auto iterator = category_to_pois.find(full_category_name);
+    auto iterator = category_to_pois.find(category_name);
     if (iterator != category_to_pois.end()) {
         for (size_t i = 0; i < iterator->second.size(); i++) {
             Parseable* parsed_poi = iterator->second[i];
@@ -184,12 +183,11 @@ void _write_protobuf_file(
         string category_name = it->first;
         const Category* category_object = &it->second;
 
-        vector<string> category_vector = {it->first};
         MaybeCategory maybe_category = build_category_objects(
             category_object,
             category_filter,
             category_to_pois,
-            &category_vector,
+            category_name,
             state);
 
         if (maybe_category.is_category) {
@@ -216,11 +214,11 @@ void write_protobuf_file(
         Parseable* parsed_poi = (*parsed_pois)[i];
         if (parsed_poi->classname() == "POI") {
             Icon* icon = dynamic_cast<Icon*>(parsed_poi);
-            category_to_pois[lowercase(icon->category.category)].push_back(parsed_poi);
+            category_to_pois[icon->category.category].push_back(parsed_poi);
         }
         else if (parsed_poi->classname() == "Trail") {
             Trail* trail = dynamic_cast<Trail*>(parsed_poi);
-            category_to_pois[lowercase(trail->category.category)].push_back(parsed_poi);
+            category_to_pois[trail->category.category].push_back(parsed_poi);
         }
         else {
             std::cout << "Unknown type" << std::endl;

@@ -19,6 +19,7 @@
 #include "attribute/marker_category.hpp"
 #include "category_gen.hpp"
 #include "file_helper.hpp"
+#include "function_timers.hpp"
 #include "icon_gen.hpp"
 #include "packaging_protobin.hpp"
 #include "packaging_xml.hpp"
@@ -150,7 +151,6 @@ void process_data(
     map<string, Category> marker_categories;
 
     // Read in all the xml taco markerpacks
-    auto begin = chrono::high_resolution_clock::now();
     for (size_t i = 0; i < input_taco_paths.size(); i++) {
         cout << "Loading taco pack " << input_taco_paths[i] << endl;
 
@@ -159,10 +159,6 @@ void process_data(
             &marker_categories,
             &parsed_pois);
     }
-    auto end = chrono::high_resolution_clock::now();
-    auto dur = end - begin;
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
-    cout << "The taco parse function took " << ms << " milliseconds to run" << endl;
 
     // Read in all the protobin waypoint markerpacks
     for (size_t i = 0; i < input_waypoint_paths.size(); i++) {
@@ -175,14 +171,9 @@ void process_data(
     }
 
     // Write all of the xml taco paths
-    begin = chrono::high_resolution_clock::now();
     for (size_t i = 0; i < output_taco_paths.size(); i++) {
         write_taco_directory(output_taco_paths[i], &marker_categories, &parsed_pois);
     }
-    end = chrono::high_resolution_clock::now();
-    dur = end - begin;
-    ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
-    cout << "The xml write function took " << ms << " milliseconds to run" << endl;
 
     // Write all of the protobin waypoint paths
     for (size_t i = 0; i < output_waypoint_paths.size(); i++) {
@@ -190,16 +181,11 @@ void process_data(
     }
 
     // Write the special map-split protbin waypoint file
-    begin = chrono::high_resolution_clock::now();
     if (output_split_waypoint_dir != "") {
         StringHierarchy category_filter;
         category_filter.add_path({}, true);
         write_protobuf_file_per_map_id(output_split_waypoint_dir, category_filter, &marker_categories, &parsed_pois);
     }
-    end = chrono::high_resolution_clock::now();
-    dur = end - begin;
-    ms = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
-    cout << "The protobuf write function took " << ms << " milliseconds to run" << endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

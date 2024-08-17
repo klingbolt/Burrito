@@ -5,6 +5,7 @@
 
 #include "../rapid_helpers.hpp"
 #include "../rapidxml-1.13/rapidxml.hpp"
+#include "../string_helper.hpp"
 #include "waypoint.pb.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -18,7 +19,7 @@ void xml_attribute_to_marker_category(
     XMLReaderState*,
     MarkerCategory* value,
     bool* is_set) {
-    value->category = get_attribute_value(input);
+    value->category = lowercase(get_attribute_value(input));
     *is_set = true;
 }
 

@@ -190,8 +190,8 @@ margin_bottom = 534.0
 window_title = "Open a Directory"
 mode = 2
 access = 2
-current_dir = ""
-current_path = ""
+current_dir = "/home/steph/Code/Projects/Burrito"
+current_path = "/home/steph/Code/Projects/Burrito/"
 __meta__ = {
 "_edit_use_anchors_": false
 }
