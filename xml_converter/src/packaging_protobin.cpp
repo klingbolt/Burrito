@@ -233,7 +233,7 @@ void write_protobuf_file(
             std::cout << "Unknown type" << std::endl;
         }
     }
-    for (auto iterator = marker_categories->begin(); iterator != marker_categories->end(); iterator++){
+    for (auto iterator = marker_categories->begin(); iterator != marker_categories->end(); iterator++) {
         StringHierarchy category_filter;
         category_filter.add_path({iterator->first}, true);
         _write_protobuf_file(
