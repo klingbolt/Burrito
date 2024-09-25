@@ -130,9 +130,7 @@ void write_burrito_directory(
             return;
         }
     }
-    StringHierarchy category_filter;
-    category_filter.add_path({}, true);
-    write_protobuf_file(output_path, category_filter, marker_categories, parsed_pois);
+    write_protobuf_file(output_path, marker_categories, parsed_pois);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

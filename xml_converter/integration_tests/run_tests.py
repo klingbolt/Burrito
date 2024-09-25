@@ -265,7 +265,7 @@ def diff_dirs(actual_output_dir: str, expected_output_dir: str) -> bool:
         diff: List[str]
         if file_to_diff.endswith(".xml"):
             diff = compare_text_files(expected_file, actual_file)
-        elif file_to_diff.endswith(".data") or file_to_diff.endswith(".bin") or file_to_diff.endswith(".guildp"):
+        elif file_to_diff.endswith(".data") or file_to_diff.endswith(".bin") or file_to_diff.endswith(".guildpoint"):
             diff = compare_protos(actual_file, expected_file)
         elif file_to_diff.endswith(".trl"):
             diff = []

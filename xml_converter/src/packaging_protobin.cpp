@@ -211,7 +211,6 @@ void _write_protobuf_file(
 
 void write_protobuf_file(
     const string& marker_pack_root_directory,
-    const StringHierarchy& category_filter,
     const map<string, Category>* marker_categories,
     const vector<Parseable*>* parsed_pois) {
     std::map<string, std::vector<Parseable*>> category_to_pois;
@@ -234,13 +233,16 @@ void write_protobuf_file(
             std::cout << "Unknown type" << std::endl;
         }
     }
-
-    _write_protobuf_file(
-        join_file_paths(state.marker_pack_root_directory, "markers.bin"),
-        category_filter,
-        marker_categories,
-        category_to_pois,
-        &state);
+    for (auto iterator = marker_categories->begin(); iterator != marker_categories->end(); iterator++){
+        StringHierarchy category_filter;
+        category_filter.add_path({iterator->first}, true);
+        _write_protobuf_file(
+            join_file_paths(state.marker_pack_root_directory, iterator->first + ".guildpoint"),
+            category_filter,
+            marker_categories,
+            category_to_pois,
+            &state);
+    }
 }
 
 // Write protobuf per map id
@@ -269,7 +271,7 @@ void write_protobuf_file_per_map_id(
     }
 
     for (auto iterator = mapid_to_category_to_pois.begin(); iterator != mapid_to_category_to_pois.end(); iterator++) {
-        string output_filepath = join_file_paths(state.marker_pack_root_directory, to_string(iterator->first) + ".bin");
+        string output_filepath = join_file_paths(state.marker_pack_root_directory, to_string(iterator->first) + ".guildpoint");
 
         _write_protobuf_file(
             output_filepath,
