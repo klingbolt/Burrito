@@ -236,8 +236,16 @@ void write_protobuf_file(
     for (auto iterator = marker_categories->begin(); iterator != marker_categories->end(); iterator++) {
         StringHierarchy category_filter;
         category_filter.add_path({iterator->first}, true);
+        string name;
+        if (iterator->second.display_name_is_set) {
+            name = normalize(iterator->second.display_name);
+        }
+        else {
+            name = normalize(iterator->first);
+        }
+
         _write_protobuf_file(
-            join_file_paths(state.marker_pack_root_directory, iterator->first + ".guildpoint"),
+            join_file_paths(state.marker_pack_root_directory, name + ".guildpoint"),
             category_filter,
             marker_categories,
             category_to_pois,
