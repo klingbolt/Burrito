@@ -88,6 +88,9 @@ OptionalString parse_marker_categories(
         for (rapidxml::xml_node<>* child_node = node->first_node(); child_node; child_node = child_node->next_sibling()) {
             parse_marker_categories(child_node, &(category->children), category, errors, state, depth + 1);
         }
+        if (category->display_name_is_set) {
+            return normalize(category->display_name);
+        }
         return name;
     }
     else {

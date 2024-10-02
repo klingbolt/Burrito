@@ -93,7 +93,7 @@ set<string> read_burrito_directory(
         cout << "Error: " << input_path << " is not an existing directory or file" << endl;
     }
     else if (filesystem::is_directory(input_path)) {
-        vector<string> burrito_files = get_files_by_suffix(input_path, ".bin");
+        vector<string> burrito_files = get_files_by_suffix(input_path, ".guildpoint");
         for (const string& path : burrito_files) {
             set<string> category_names = read_protobuf_file(path, input_path, marker_categories, parsed_pois);
             top_level_categories.insert(category_names.begin(), category_names.end());
@@ -130,9 +130,7 @@ void write_burrito_directory(
             return;
         }
     }
-    StringHierarchy category_filter;
-    category_filter.add_path({}, true);
-    write_protobuf_file(output_path, category_filter, marker_categories, parsed_pois);
+    write_protobuf_file(output_path, marker_categories, parsed_pois);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -178,6 +176,7 @@ void process_data(
     cout << "The taco parse function took " << ms << " milliseconds to run" << endl;
 
     // Read in all the protobin guildpoint markerpacks
+    begin = chrono::high_resolution_clock::now();
     for (size_t i = 0; i < input_guildpoint_paths.size(); i++) {
         cout << "Loading guildpoint pack " << input_guildpoint_paths[i] << endl;
 
@@ -187,6 +186,10 @@ void process_data(
             &parsed_pois);
         combine_sets(&category_names, &top_level_categories, &duplicate_categories);
     }
+    end = chrono::high_resolution_clock::now();
+    dur = end - begin;
+    ms = std::chrono::duration_cast<std::chrono::microseconds>(dur).count();
+    cout << "The protobuf read function took " << ms << " microseconds to run" << endl;
 
     if (duplicate_categories.size() > 0 && allow_duplicates != true) {
         cout << "Did not write due to duplicates in categories. If you want to bypass this, use '--allow-duplicates'" << endl;

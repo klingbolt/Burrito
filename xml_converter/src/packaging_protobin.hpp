@@ -19,7 +19,6 @@ std::set<std::string> read_protobuf_file(
 
 void write_protobuf_file(
     const std::string& marker_pack_root_directory,
-    const StringHierarchy& category_filter,
     const std::map<std::string, Category>* marker_categories,
     const std::vector<Parseable*>* parsed_pois);
 

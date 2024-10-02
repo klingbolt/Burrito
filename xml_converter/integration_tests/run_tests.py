@@ -124,7 +124,7 @@ line_patterns_to_ignore = [
     r"^Loading guildpoint pack .*$",
     r"^The taco parse function took [0-9]+ milliseconds to run$",
     r"^The xml write function took [0-9]+ milliseconds to run$",
-    r"^The protobuf read function took [0-9]+ milliseconds to run$",
+    r"^The protobuf read function took [0-9]+ microseconds to run$",
     r"^The protobuf write function took [0-9]+ milliseconds to run$",
     r"^$"
 ]
@@ -267,7 +267,7 @@ def diff_dirs(actual_output_dir: str, expected_output_dir: str) -> bool:
         diff: List[str]
         if file_to_diff.endswith(".xml"):
             diff = compare_text_files(expected_file, actual_file)
-        elif file_to_diff.endswith(".data") or file_to_diff.endswith(".bin") or file_to_diff.endswith(".guildp"):
+        elif file_to_diff.endswith(".data") or file_to_diff.endswith(".bin") or file_to_diff.endswith(".guildpoint"):
             diff = compare_protos(actual_file, expected_file)
         elif file_to_diff.endswith(".trl"):
             diff = []
