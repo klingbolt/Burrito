@@ -3,6 +3,7 @@ name: Diff Protobin
 on:
   pull_request_target:
     paths:
+      - '**/*.bin'
       - '**/*.guildpoint'
 jobs:
   custom-diff:
@@ -23,7 +24,7 @@ jobs:
 
     - name: Get Filenames
       run: |
-        for file in $(git diff --name-only origin/${{ github.base_ref }} refs/pull/${{ github.event.pull_request.number }}/head | grep '.guildpoint$'); do
+        for file in $(git diff --name-only origin/${{ github.base_ref }} refs/pull/${{ github.event.pull_request.number }}/head | grep -E '.bin$|.guildpoint$'); do
           mkdir -p $(dirname "$file")
           if [ -n "$(git ls-tree "origin/${{ github.base_ref }}" -- "$file")" ]; then
             git show origin/${{ github.base_ref }}:$file > $file._old
