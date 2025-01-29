@@ -86,7 +86,7 @@ jobs:
               "</details>",
             ].join("\n");
             
-            if (comments.find(comment => comment_body == comment.body) {
+            if (comments.find(comment => comment_body == comment.body)) {
               continue;
             }
 
