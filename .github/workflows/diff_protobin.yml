@@ -86,11 +86,12 @@ jobs:
               "</details>",
             ].join("\n");
             
-            // Create a regular expression to match the comment body while ignoring the timestamp
-            const sanitized_diff_contents = diff_contents.replace(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{9} \+0000)/g, '').replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            // Regular expression to remove timestamps from the diff contents
+            const timestamp_regex = /\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+ \+\d{4}/g;
+            const sanitized_diff_contents = diff_contents.replace(timestamp_regex, '').replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 
             // Check if a similar comment already exists
-            if (comments.some(comment => comment.body.includes(sanitized_diff_contents))) {
+            if (comments.some(comment => comment.body.replace(timestamp_regex, '').includes(sanitized_diff_contents))) {
               continue;
             }
 
