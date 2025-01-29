@@ -90,7 +90,7 @@ jobs:
             const sanitized_diff_contents = diff_contents.replace(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{9} \+0000)/g, '').replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 
             // Check if a similar comment already exists
-            if (comments.some(comment => comment.includes sanitized_diff_contents)) {
+            if (comments.some(comment => comment.body.includes(sanitized_diff_contents))) {
               continue;
             }
 
