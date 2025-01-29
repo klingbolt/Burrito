@@ -87,10 +87,10 @@ jobs:
             ].join("\n");
             
             // Create a regular expression to match the comment body while ignoring the timestamp
-            const comment_regex = new RegExp(comment_body.replace(/[0-9]{4}-[0-9]{2}-[0-9]{2}\s(([+-]?(?=\.\d|\d)(?:\d+)?(?:\.?\d*))(?:[Ee]([+-]?\d+))?(:([+-]?(?=\.\d|\d)(?:\d+)?(?:\.?\d*))(?:[Ee]([+-]?\d+))?)+)\s\+0000, "") '.*'));
+            const comment_regex = new RegExp(comment_body.replace(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6} \+0000)/g, '').replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), '.*');
 
             // Check if a similar comment already exists
-            if (comments.find(comment => comment_regex.test(comment.body))) {
+            if (comments.find(comment => comment_regex.test(comment.body.replace(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6} \+0000)/g, '')))) {
               continue;
             }
 
