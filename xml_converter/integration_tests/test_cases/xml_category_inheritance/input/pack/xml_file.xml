@@ -18,6 +18,7 @@
         <POI Type="mycategory" MapID="50" />
         <POI Type="mycategory" XPos="170.81" MapID="50" />
         <POI Type="mycategory" YPos="211.65" MapID="50" />
+        <POI Type="mycategory" MapID="50" XPos="100.000000" YPos="200.000000" ZPos="300.000000"/>
 
         <POI Type="nestedlevel1" MapID="50" />
         <POI Type="nestedlevel1.nestedlevel2" MapID="50" />
