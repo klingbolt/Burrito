@@ -69,6 +69,8 @@ jobs:
             issue_number: issue_number,
           })
 
+          console.log(comments.length)
+
           const files = fs.readFileSync('file_list.txt', 'utf8').split("\n");
 
           for (let file of files) {
@@ -92,7 +94,7 @@ jobs:
             console.log(sanitized_diff_contents)
 
             // Check if a similar comment already exists
-            if (comments.some(comment => comment.body.replace(timestamp_regex, '').includes(sanitized_diff_contents))) {
+            if (comments.some(comment => comment.body.replace(timestamp_regex, '') === diff_contents))) {
               console.log(`Skipping file ${file}, similar comment already exists.`);
               continue;
             }
