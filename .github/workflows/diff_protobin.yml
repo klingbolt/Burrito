@@ -63,10 +63,10 @@ jobs:
           const githubToken = process.env.GITHUB_TOKEN;
 
           // Get the existing comments.
-          const {data: comments} = await github.rest.pulls.listComments({
+          const {data: comments} = await github.rest.pulls.listReviewComments({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            issue_number: issue_number,
+            pull_number: issue_number,
           })
 
           console.log(comments.length)
