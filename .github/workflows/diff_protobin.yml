@@ -69,11 +69,6 @@ jobs:
             pull_number: issue_number,
           })
 
-          console.log(comments.length)
-          for (let comment of comments) {
-            console.log(comment.body);
-          }
-
           const files = fs.readFileSync('file_list.txt', 'utf8').split("\n");
 
           for (let file of files) {
@@ -93,12 +88,10 @@ jobs:
             
             // Regular expression to remove timestamps from the diff contents
             const timestamp_regex = /\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+ \+\d{4}/g;
-            const sanitized_diff_contents = comment_body.replace(timestamp_regex, '');
-            console.log(sanitized_diff_contents)
 
             // Check if a similar comment already exists
-            if (comments.some(comment => comment.body.replace(timestamp_regex, '') === sanitized_diff_contents)) {
-              console.log(`Skipping file ${file}, similar comment already exists.`);
+            if (comments.some(comment => comment.body.replace(timestamp_regex, '') === comment_body.replace(timestamp_regex, ''))) {
+              console.log(`Skipping file ${file}, identical comment already exists.`);
               continue;
             }
 
