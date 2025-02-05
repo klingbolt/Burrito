@@ -70,6 +70,9 @@ jobs:
           })
 
           console.log(comments.length)
+          for (let comment of comments) {
+            console.log(comment.body)
+          }
 
           const files = fs.readFileSync('file_list.txt', 'utf8').split("\n");
 
