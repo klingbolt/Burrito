@@ -71,7 +71,7 @@ jobs:
 
           console.log(comments.length)
           for (let comment of comments) {
-            console.log(comment.body)
+            console.log(comment.body);
           }
 
           const files = fs.readFileSync('file_list.txt', 'utf8').split("\n");
@@ -93,7 +93,7 @@ jobs:
             
             // Regular expression to remove timestamps from the diff contents
             const timestamp_regex = /\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+ \+\d{4}/g;
-            const sanitized_diff_contents = diff_contents.replace(timestamp_regex, '');
+            const sanitized_diff_contents = comment_body.replace(timestamp_regex, '');
             console.log(sanitized_diff_contents)
 
             // Check if a similar comment already exists
