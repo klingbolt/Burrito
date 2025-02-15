@@ -28,6 +28,10 @@ jobs:
         git fetch origin +refs/pull/${{ github.event.pull_request.number }}/head:refs/pull/${{ github.event.pull_request.number }}/head
         git fetch origin ${{ github.base_ref }}
 
+    - name: Ensure file_list.txt exists
+      run: |
+        touch file_list.txt
+
     - name: Get Filenames
       run: |
         for file in $(git diff --name-only origin/${{ github.base_ref }} refs/pull/${{ github.event.pull_request.number }}/head | grep -E '.bin$|.guildpoint$'); do
