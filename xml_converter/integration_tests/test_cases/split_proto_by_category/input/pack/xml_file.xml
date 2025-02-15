@@ -39,6 +39,7 @@
     </MarkerCategory>
 
     <POIs>
+    <POI Type="mycategory" />
 
     <POI Type="parent1.child1.grandchild1" />
     <POI Type="parent1.child1.grandchild2" />

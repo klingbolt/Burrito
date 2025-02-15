@@ -35,6 +35,7 @@
 		</MarkerCategory>
 	</MarkerCategory>
 	<POIs>
+		<POI Type="mycategory"/>
 		<POI Type="parent1.child1.grandchild1" MapID="50" XPos="111.000000" YPos="0.000000" ZPos="0.000000"/>
 		<POI Type="parent1.child1.grandchild2" MapID="50" XPos="112.000000" YPos="0.000000" ZPos="0.000000"/>
 		<POI Type="parent1.child1.grandchild3" MapID="50" XPos="113.000000" YPos="0.000000" ZPos="0.000000"/>
