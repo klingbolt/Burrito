@@ -46,7 +46,7 @@ jobs:
             touch $file.textproto._new
           fi
 
-          diff -u $file.textproto._old --label old $file.textproto._new --label new > $file._diff || true
+          diff -u $file.textproto._old $file.textproto._new > $file._diff || true
           echo $file >> file_list.txt
         done
 
